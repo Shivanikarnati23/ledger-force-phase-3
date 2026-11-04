@@ -3,6 +3,7 @@ import pandas as pd
 from sqlalchemy import Date, String, text
 from app.database import engine, Base
 import app.models  # Registers all models and constraints with Base.metadata
+from auth import hash_password  # Imported from your new auth.py module
 
 def normalize_emp_id(val):
     if pd.isna(val):
@@ -222,12 +223,40 @@ def run_seeder():
     else:
         print("Skipped salary_structures.csv: file is empty.")
 
+    # 8. Seed Demo Users with Hashed Passwords & Roles (Task 13 Requirement)
+    print("Seeding demo user accounts...")
+    from app.models import User
+    from app.database import SessionLocal
+
+    db = SessionLocal()
+    demo_users = [
+        {"username": "admin_user", "password": "AdminPassword123!", "role": "Admin", "is_active": True},
+        {"username": "hr_user", "password": "HRPassword123!", "role": "HR", "is_active": True},
+        {"username": "employee_user", "password": "EmployeePassword123!", "role": "Employee", "is_active": True},
+        {"username": "inactive_user", "password": "Password123!", "role": "Employee", "is_active": False}
+    ]
+
+    for u_data in demo_users:
+        existing = db.query(User).filter(User.username == u_data["username"]).first()
+        if not existing:
+            hashed_pw = hash_password(u_data["password"])
+            db_user = User(
+                username=u_data["username"],
+                hashed_password=hashed_pw,
+                role=u_data["role"],
+                is_active=u_data["is_active"]
+            )
+            db.add(db_user)
+    db.commit()
+    db.close()
+    print("Seeded users: 4 demo accounts added.")
+
     print("Database seeding completed successfully!")
 
     # Automatically print live database table counts
     print("\n--- Final Database Row Counts ---")
     with engine.connect() as conn:
-        for table_name in ['departments', 'roles', 'employees', 'employee_assignments', 'salary_components', 'salary_revisions', 'salary_structures']:
+        for table_name in ['departments', 'roles', 'employees', 'employee_assignments', 'salary_components', 'salary_revisions', 'salary_structures', 'users']:
             try:
                 count = conn.execute(text(f"SELECT count(*) FROM {table_name};")).scalar()
                 print(f"  - {table_name}: {count} rows")
