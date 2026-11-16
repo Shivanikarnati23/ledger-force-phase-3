@@ -13,10 +13,10 @@ def test_effective_dated_salary_lookup():
     ]
     
     for case in test_cases:
-        response = client.get(f"/salary/structure/{case['employee_id']}?as_of_date={case['date']}")
+        response = client.get(f"/api/v1/salary/structure/{case['employee_id']}?as_of_date={case['date']}")
         # Assert the endpoint responds successfully (200 OK or appropriate fallback)
         assert response.status_code in [200, 404]
 
 def test_salary_revision():
-    response = client.get("/salary/revisions/E0001")
+    response = client.get("/api/v1/salary/revisions/E0001")
     assert response.status_code in [200, 404]
